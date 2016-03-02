@@ -17,51 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-extend Chef::Mixin::ShellOut
 
-=begin
-credentials = []
-credentials_updated = false
-
-passwordfile = File.open(
-  node['dovecot']['conf']['password_file'], File::CREAT | File::RDONLY, 0640
-)
-
-local_creds = {}
-passwordfile.readlines.each do |line|
-  (user, crypt) = line.strip.split(':')
-  local_creds[user] = crypt
-end
-
-passwordfile.close
-
-data_bag_item(
-  node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
-)['users'].each do |user|
-  enc_password = shell_out("/usr/bin/doveadm pw -s MD5 -p #{user[1]}").stdout
-  credentials_updated = true if shell_out(
-    "/usr/bin/doveadm pw -t '#{local_creds[user[0]]}' -p #{user[1]}"
-  ).exitstatus != 0
-  credentials.push([user[0], enc_password.strip])
-end
-
-template node['dovecot']['conf']['password_file'] do
-  source 'password.erb'
-  owner node['dovecot']['user']
-  group node['dovecot']['group']
-  mode '0640'
-  variables(
-    credentials: credentials
-  )
-  only_if { credentials_updated }
-end */
-=end
-
-
-
-dovecot_passwordfile "password_file" do
+dovecot_passwordfile 'password_file' do
   passwordFile node['dovecot']['conf']['password_file']
   credentials  data_bag_item(
-        node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
+    node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
   )['users']
+  owner node['dovecot']['user']
+  group node['dovecot']['group']
 end
