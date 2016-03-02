@@ -36,7 +36,7 @@ def changed?
     credentials_updated = true if shell_out(
     "/usr/bin/doveadm pw -t '#{@@local_creds[user]}' -p #{password}"
     ).exitstatus != 0
-    @current_resource.credentials.push[(user, enc_password.strip])
+    @current_resource.credentials.push(user, enc_password.strip)
   end
   credentials_updated
 end
@@ -49,5 +49,16 @@ def readPwdFile
     local_creds[user] = crypt
   end
   local_creds
+end
+
+def writePasswordFile
+  installer_template = Chef::Resource::Template.new(template_destination, @run_context)
+  installer_template.cookbook('dovecot')
+  installer_template.source("password.rb")
+  installer_template.local(true)
+  installer_template.sensitive(true)
+  variables[:credenntials] = @current_resource.credentials
+  installer_template.variables(variables)
+  installer_template.run_action(:create)
 end
 
