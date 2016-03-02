@@ -19,6 +19,7 @@
 #
 extend Chef::Mixin::ShellOut
 
+=begin
 credentials = []
 credentials_updated = false
 
@@ -53,4 +54,19 @@ template node['dovecot']['conf']['password_file'] do
     credentials: credentials
   )
   only_if { credentials_updated }
+end */
+=end
+
+
+data_bag_item(
+    node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
+)['users'].each do |user|
+
+
+
+PasswordFile "password_file" do
+  passwordFile node['dovecot']['conf']['password_file']
+  credentials  data_bag_item(
+        node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
+  )['users']
 end
