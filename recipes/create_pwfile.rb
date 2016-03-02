@@ -58,13 +58,8 @@ end */
 =end
 
 
-data_bag_item(
-    node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
-)['users'].each do |user|
 
-
-
-PasswordFile "password_file" do
+dovecot_passwordfile "password_file" do
   passwordFile node['dovecot']['conf']['password_file']
   credentials  data_bag_item(
         node['dovecot']['databag_name'], node['dovecot']['databag_item_name']
