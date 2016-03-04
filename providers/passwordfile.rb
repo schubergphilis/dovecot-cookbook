@@ -2,6 +2,7 @@
 #
 
 extend Chef::Mixin::ShellOut
+require 'pry'
 
 def whyrun_supported?
   true
@@ -9,7 +10,7 @@ end
 
 action :create do
   if !@current_resource.changed
-    Chef::Log.info "#{@new_resource} nothing changed, no need to update password file"
+    Chef::Log.info "#{@new_resource} no changes, wil not update password file"
   else
     converge_by('Updating Password file') do
       write_password_file
@@ -30,13 +31,13 @@ private
 
 def changed?
   local_creds = read_pwd_file
-  @encrypted_credentials = []
+  @encrypted_credentials ||= []
   credentials_updated = false
-  current_resource.credentials.each do |user, password|
+  @current_resource.credentials.each do |user, password|
     enc_password = shell_out("/usr/bin/doveadm pw -s MD5 -p #{password}").stdout
-    credentials_updated = true if shell_out(
+    credentials_updated = shell_out(
       "/usr/bin/doveadm pw -t '#{local_creds[user]}' -p #{password}"
-    ).exitstatus != 0
+    ).exitstatus != 0 ? true : false
     @encrypted_credentials.push([user, enc_password.strip])
   end
   credentials_updated
@@ -60,7 +61,6 @@ def write_password_file
   )
   installer_template.cookbook('dovecot')
   installer_template.source('password.erb')
-  installer_template.local(false)
   installer_template.sensitive(true)
   installer_template.owner(@current_resource.owner)
   installer_template.group(@current_resource.group)
