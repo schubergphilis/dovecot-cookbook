@@ -2,7 +2,6 @@
 #
 
 extend Chef::Mixin::ShellOut
-require 'pry'
 
 def whyrun_supported?
   true
