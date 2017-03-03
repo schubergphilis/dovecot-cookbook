@@ -48,4 +48,10 @@ module DovecotCookbook
       output_entries
     end
   end
+
+  def self.is_password_ok?(current_hashed, plaintext_pass)
+    true if shell_out(
+      "/usr/bin/doveadm pw -t '#{current_hashed} -p #{plaintext_pass}'"
+    )
+  end
 end

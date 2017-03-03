@@ -30,25 +30,15 @@ include_recipe 'dovecot::from_package'
 credentials = []
 credentials_updated = false
 
-local_creds = {}
-if ::File.exist?(node['dovecot']['conf']['password_file'])
-  passwordfile = File.open(
-    node['dovecot']['conf']['password_file'], File::RDONLY | File::CREAT, 640
+if DovecotCookbook::Pwfile.exists?(node['dovecot']['conf']['password_file'])
+  local_creds = DovecotCookbook::Pwfile.filetohash(
+    node['dovecot']['conf']['password_file']
   )
-
-  passwordfile.readlines.each do |line|
-    (user, crypt, uid, gid, gecos, homedir, shell, extra_fields) \
-      = line.strip.split(':')
-    local_creds[user] = if line.strip.split(':').length == 2
-                          [crypt]
-                        else
-                          [crypt, uid, gid, gecos, homedir, shell, extra_fields]
-                        end
-  end
-  passwordfile.close
 else
-  credentials_updated = true
+  pwfile_not_present = true
 end
+
+unless pwfile_not_present puts local_creds
 
 ruby_block 'databag_to_dovecot_userdb' do
   block do
@@ -64,16 +54,10 @@ ruby_block 'databag_to_dovecot_userdb' do
       userdbformat[1] = shell_out("/usr/bin/doveadm pw -s MD5 -p \
                               #{plaintextpass}").stdout.tr("\n", '')
 
-      if local_creds.key?(username) && credentials_updated == false
-        current_encpass = if local_creds[username].is_a?(Array)
-                            local_creds[username][0]
-                          else
-                            local_creds[username]
-                          end
-        credentials_updated = true if shell_out(
-          "/usr/bin/doveadm pw -t '#{current_encpass}' \
-          -p #{plaintextpass}"
-        ).exitstatus != 0
+      if local_creds.key?(username) && pwfile_not_present == false
+        credentials_updated = true unless DovecotCookbook::Pwfile.password_valid?(
+                                            local_creds[username][0], plaintextpass
+                                          )
       else
         credentials_updated = true
       end
