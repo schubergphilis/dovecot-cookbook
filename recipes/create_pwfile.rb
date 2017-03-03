@@ -40,9 +40,9 @@ if ::File.exist?(node['dovecot']['conf']['password_file'])
     (user, crypt, uid, gid, gecos, homedir, shell, extra_fields) \
       = line.strip.split(':')
     local_creds[user] = if line.strip.split(':').length == 2
-                          [crypt, uid, gid, gecos, homedir, shell, extra_fields]
-                        else
                           [crypt]
+                        else
+                          [crypt, uid, gid, gecos, homedir, shell, extra_fields]
                         end
   end
   passwordfile.close
