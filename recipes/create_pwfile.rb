@@ -17,8 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-extend Chef::Mixin::ShellOut
-
 include_recipe 'dovecot::from_package'
 
 # The file credentials should be like:
@@ -27,42 +25,30 @@ include_recipe 'dovecot::from_package'
 # uid,gid,home,extra_Fields can be nil
 # user:pass:<num>:<num>::<string>::<Extras string>
 
+# Predefined Variables
 credentials = []
-credentials_updated = false
-
-if DovecotCookbook::Pwfile.exists?(node['dovecot']['conf']['password_file'])
-  local_creds = DovecotCookbook::Pwfile.filetohash(
-    node['dovecot']['conf']['password_file']
-  )
-else
-  pwfile_not_present = true
-end
-
-unless pwfile_not_present puts local_creds
+update_credentials = false
 
 ruby_block 'databag_to_dovecot_userdb' do
   block do
-    data_bag_item(
-      node['dovecot']['databag_name'], node['dovecot']['databag_users_item']
-    )['users'].each do |username, user_details|
-      userdbformat = if user_details.is_a?(Array)
-                       [username] + user_details
-                     else
-                       [username, user_details, nil, nil, nil, nil, nil, nil]
-                     end
-      plaintextpass = userdbformat[1]
-      userdbformat[1] = shell_out("/usr/bin/doveadm pw -s MD5 -p \
-                              #{plaintextpass}").stdout.tr("\n", '')
+    passwd_file = node['dovecot']['conf']['password_file']
+    databag_users =
+      data_bag_item(node['dovecot']['databag_name'],
+                    node['dovecot']['databag_users_item'])['users']
 
-      if local_creds.key?(username) && pwfile_not_present == false
-        credentials_updated = true unless DovecotCookbook::Pwfile.password_valid?(
-                                            local_creds[username][0], plaintextpass
-                                          )
-      else
-        credentials_updated = true
-      end
-      credentials.push(userdbformat)
-    end
+    # Check if passwd file exists
+    local_creds, pwfile_exists =
+      DovecotCookbook::Pwfile.passfile_read(passwd_file)
+    # Check if users on both passwd file and databag are the same
+    # if not, force credentials update
+    update_credentials = true unless \
+      DovecotCookbook::Pwfile.arrays_same?(databag_users.keys,
+                                           local_creds.keys)
+    # Check if users has a changed password, if not change it and force update
+    user_credentials, update_credentials = \
+      DovecotCookbook::Pwfile.compile_users(databag_users, local_creds,
+                                            pwfile_exists, update_credentials)
+    credentials.push(*user_credentials)
   end
   action :run
 end
@@ -75,5 +61,5 @@ template node['dovecot']['conf']['password_file'] do
   variables(
     credentials: credentials
   )
-  only_if { credentials_updated }
+  only_if { update_credentials }
 end

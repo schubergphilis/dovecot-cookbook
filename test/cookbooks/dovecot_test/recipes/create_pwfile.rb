@@ -20,6 +20,7 @@
 #
 
 include_recipe 'dovecot'
+include_recipe 'dovecot::create_pwfile'
 
 ruby_block 'ohai plugin tests' do
   block do
@@ -33,7 +34,6 @@ ruby_block 'ohai plugin tests' do
   end
 end
 
-include_recipe 'dovecot::create_pwfile'
 
 # Required for integration tests:
 package 'lsof'
