@@ -22,6 +22,7 @@ module DovecotCookbook
   # Helper module to check password file and import it
   module Pwfile
     extend Chef::Mixin::ShellOut
+
     def self.exists?(localdata)
       true if ::File.exist?(localdata)
     end
@@ -94,9 +95,7 @@ module DovecotCookbook
       credentials = []
       databag_users.each do |username, user_details|
         current_user = dbentry_to_array(username, user_details)
-        current_user[1], updated = \
-          generate_userpass(current_users[username], current_user[1], updated,
-                            pwfile_exists)
+        current_user[1], updated = generate_userpass(current_users[username], current_user[1], updated, pwfile_exists)
         credentials.push(current_user)
       end
       [credentials, updated]

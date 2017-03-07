@@ -19,7 +19,6 @@
 # limitations under the License.
 #
 
-include_recipe 'dovecot'
 include_recipe 'dovecot::create_pwfile'
 
 ruby_block 'ohai plugin tests' do
@@ -34,6 +33,7 @@ ruby_block 'ohai plugin tests' do
   end
 end
 
+include_recipe 'dovecot_test'
 
 # Required for integration tests:
 package 'lsof'

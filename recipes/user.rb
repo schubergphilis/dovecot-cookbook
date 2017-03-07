@@ -32,14 +32,6 @@ group node['dovecot']['group'] do
   append true
 end
 
-if node['dovecot']['conf']['default_login_user'].nil?
-  user 'dovenull'
-  group 'dovenull'
-else
-  user node['dovecot']['conf']['default_login_user']
-  group node['dovecot']['conf']['default_login_user']
-end
-
 default_login_user = node['dovecot']['conf']['default_login_user'] || 'dovenull'
 
 group default_login_user do
