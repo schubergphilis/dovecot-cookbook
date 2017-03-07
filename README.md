@@ -61,6 +61,7 @@ Table of Contents
     * [Quota-status Service Example](#quota-status-service-example)
     * [Quota-warning Service Example](#quota-warning-service-example)
   * [LDAP Example](#ldap-example)
+  * [Password File Example](#password-file-example)
   * [A Complete Example](#a-complete-example)
 * [Testing](#testing)
 * [Contributing](#contributing)
@@ -129,6 +130,7 @@ To see a more complete description of the attributes, go to the [Dovecot wiki2 c
 | `node['dovecot']['ohai_plugin']['build-options']` | `true`                     | Whether to enable reading build options inside ohai plugin. Can be disabled to be lighter.
 | `node['dovecot']['databag_name']`              | `dovecot`                  | The databag to use.
 | `node['dovecot']['databag_users_item']`         | `users`                    | The databag item to use for User's database (Passwords).
+| `node['dovecot']['conf']['password_file']`      | `#{node['dovecot']['conf_path']}/password` | The Password file location
 
 ## Main Configuration Attributes
 
@@ -906,6 +908,46 @@ node.default['dovecot']['conf']['ldap']['base'] = node['openldap']['basedn']
 include_recipe 'dovecot'
 ```
 
+## Password File Example
+
+This is an example how to use userdb password file.
+
+```ruby
+# Define databag and item inside Databag (default.conf)
+node.default['dovecot']'databag_name'] = 'dovecot'
+node.default['dovecot']['databag_users_item'] = 'users'
+
+# Attributes for userdb to function
+node.default['dovecot']['auth']['passwdfile'] = {
+ 'passdb' => {
+    'driver' => 'passwd-file',
+    'args'   => node['dovecot']['conf']['password_file']
+ },
+ 'userdb' => {
+    'driver' => 'passwd-file',
+    'args'  => "username_format=%u #{node['dovecot']['conf']['password_file']}",
+    'default_fields' => 'home=/var/dovecot/vmail/%d/%n'
+ }
+}
+
+
+#include this recipe on your
+include_recipe 'dovecot::pwfile-file'
+```
+
+Databag example.
+Two ways of defining an user example included
+
+```json
+{
+  "users": {
+    "dilan": "password1234",
+    "vassilis": [
+      "vassilis1234",null,null,null,null,null,null
+    ]
+  }
+}
+```
 ## A Complete Example
 
 This is a complete recipe example for installing and configuring Dovecot 2 to work with PostfixAdmin MySQL tables, including IMAP service:

@@ -18,6 +18,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+include_recipe 'dovecot_test'
 
 include_recipe 'dovecot::create_pwfile'
 
@@ -32,8 +33,44 @@ ruby_block 'ohai plugin tests' do
     end
   end
 end
+node.default['dovecot']['auth']['passwdfile'] = {
+ 'passdb' => {
+    'driver' => 'passwd-file',
+    'args'   => node['dovecot']['conf']['password_file']
+ },
+ 'userdb' => {
+    'driver' => 'passwd-file',
+    'args'  => "username_format=%u #{node['dovecot']['conf']['password_file']}"
+ }
+}
+node.default['dovecot']['services'] = {
+  'auth' => {
+    'listeners' => [
+      {
+        'unix:auth-passdb' => {
+          'mode' => '0600',
+          'user' => 'dovecot',
+          'group' => 'dovecot'
+        }
+      }
+    ]
+  },
+  'config' => {
+    'listeners' => [
+      {
+        'unix:config' => {
+         'user' => 'dovecot'
+        }
+      }
+    ]
+  }
+}
 
-include_recipe 'dovecot_test'
+
+node.default['dovecot']['protocols']['imap'] = {}
+node.default['dovecot']['protocols']['pop3'] = {}
+node.default['dovecot']['protocols']['lda'] =
+  { 'mail_plugins' => %w($mail_plugins) }
 
 # Required for integration tests:
 package 'lsof'
