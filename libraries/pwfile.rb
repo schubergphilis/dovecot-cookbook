@@ -91,14 +91,13 @@ module DovecotCookbook
       [encrypt_password(plaintextpass), true]
     end
 
-    def self.compile_users(databag_users, current_users, pwfile_exists, updated)
-      credentials = []
+    def self.compile_users(databag_users, current_users, pwfile_exists, updated, credentials)
       databag_users.each do |username, user_details|
         current_user = dbentry_to_array(username, user_details)
         current_user[1], updated = generate_userpass(current_users[username], current_user[1], updated, pwfile_exists)
         credentials.push(current_user)
       end
-      [credentials, updated]
+      updated
     end
   end
 end

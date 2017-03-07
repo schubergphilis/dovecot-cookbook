@@ -18,21 +18,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-include_recipe 'dovecot_test'
 
-include_recipe 'dovecot::create_pwfile'
+maildir = '/var/dovecot/vmail'
 
-ruby_block 'ohai plugin tests' do
-  block do
-    unless node['dovecot']['version'].is_a?(String)
-      raise 'Ohai plugin cannot get dovecot version.'
-    end
-    unless node['dovecot']['build-options'].is_a?(Hash) &&
-           !node['dovecot']['build-options'].empty?
-      raise 'Ohai plugin cannot get dovecot build options.'
-    end
-  end
-end
+
 node.default['dovecot']['auth']['passwdfile'] = {
  'passdb' => {
     'driver' => 'passwd-file',
@@ -40,7 +29,8 @@ node.default['dovecot']['auth']['passwdfile'] = {
  },
  'userdb' => {
     'driver' => 'passwd-file',
-    'args'  => "username_format=%u #{node['dovecot']['conf']['password_file']}"
+    'args'  => "username_format=%u #{node['dovecot']['conf']['password_file']}",
+    'default_fields' => "home=#{maildir}/%d/%n"
  }
 }
 node.default['dovecot']['services'] = {
@@ -66,11 +56,24 @@ node.default['dovecot']['services'] = {
   }
 }
 
-
 node.default['dovecot']['protocols']['imap'] = {}
 node.default['dovecot']['protocols']['pop3'] = {}
 node.default['dovecot']['protocols']['lda'] =
   { 'mail_plugins' => %w($mail_plugins) }
+node.default['dovecot']['conf']['mail_uid'] = 'dovecot'
+node.default['dovecot']['conf']['mail_gid'] = 'dovecot'
+node.default['dovecot']['conf']['mail_location'] = 'maildir:~/Maildir'
+
+include_recipe 'dovecot_test'
+include_recipe 'dovecot::create_pwfile'
+
+['/var/dovecot', maildir].each do |dir_to_create|
+  directory dir_to_create do
+    owner node.default['dovecot']['user']
+    group node.default['dovecot']['user']
+    action :create
+  end
+end
 
 # Required for integration tests:
 package 'lsof'

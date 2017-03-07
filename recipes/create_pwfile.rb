@@ -38,9 +38,11 @@ ruby_block 'databag_to_dovecot_userdb' do
     # if not, force credentials update
     update_credentials = true unless DovecotCookbook::Pwfile.arrays_same?(databag_users.keys, local_creds.keys)
     # Check if users has a changed password, if not change it and force update
-    user_credentials, update_credentials = \
-      DovecotCookbook::Pwfile.compile_users(databag_users, local_creds, pwfile_exists, update_credentials)
-    credentials.push(*user_credentials)
+    update_credentials = DovecotCookbook::Pwfile.compile_users(databag_users,
+                                                               local_creds,
+                                                               pwfile_exists,
+                                                               update_credentials,
+                                                               credentials)
   end
   action :run
 end
